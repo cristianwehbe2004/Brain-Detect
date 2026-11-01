@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+*.py[cod]
+
+# The BraTS dataset is large and access-controlled.
+data/raw/*
+data/processed/*
+data/decathlon/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
