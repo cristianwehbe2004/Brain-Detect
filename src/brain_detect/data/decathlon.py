@@ -119,9 +119,20 @@ def patient_splits(
     if validation_fraction < 0 or test_fraction < 0 or validation_fraction + test_fraction >= 1:
         raise ValueError("Validation and test fractions must be non-negative and sum to less than 1")
     patient_ids = np.array(sorted(record.patient_id for record in records))
+    if len(patient_ids) < 2:
+        raise ValueError("At least two patients are required for train/validation splits")
     np.random.default_rng(seed).shuffle(patient_ids)
     test_count = round(len(patient_ids) * test_fraction)
     validation_count = round(len(patient_ids) * validation_fraction)
+    if validation_fraction > 0 and validation_count == 0:
+        validation_count = 1
+    if test_fraction > 0 and test_count == 0 and len(patient_ids) - validation_count >= 3:
+        test_count = 1
+    while test_count + validation_count >= len(patient_ids):
+        if test_count >= validation_count and test_count > 0:
+            test_count -= 1
+        else:
+            validation_count -= 1
     return {
         "train": patient_ids[test_count + validation_count :].tolist(),
         "validation": patient_ids[test_count : test_count + validation_count].tolist(),

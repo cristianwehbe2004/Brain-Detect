@@ -43,3 +43,12 @@ def test_patient_splits_are_deterministic() -> None:
     records = [DecathlonRecord(f"brain_{index:03d}", Path("image"), Path("label")) for index in range(10)]
 
     assert patient_splits(records, seed=3) == patient_splits(records, seed=3)
+
+
+def test_small_split_keeps_a_validation_case() -> None:
+    records = [DecathlonRecord(f"brain_{index:03d}", Path("image"), Path("label")) for index in range(2)]
+
+    splits = patient_splits(records)
+
+    assert len(splits["validation"]) == 1
+    assert len(splits["train"]) == 1
