@@ -23,7 +23,7 @@ def training_transforms(patch_size: tuple[int, int, int] = (96, 96, 96)) -> Comp
         [
             LoadImaged(keys=("image", "label")),
             EnsureChannelFirstd(keys=("image", "label")),
-            Orientationd(keys=("image", "label"), axcodes="RAS"),
+            Orientationd(keys=("image", "label"), axcodes="RAS", labels=None),
             CropForegroundd(keys=("image", "label"), source_key="image"),
             ScaleIntensityRangePercentilesd(
                 keys="image",
@@ -34,6 +34,7 @@ def training_transforms(patch_size: tuple[int, int, int] = (96, 96, 96)) -> Comp
                 clip=True,
                 channel_wise=True,
             ),
+            SpatialPadd(keys=("image", "label"), spatial_size=patch_size),
             RandCropByPosNegLabeld(
                 keys=("image", "label"),
                 label_key="label",
@@ -57,7 +58,7 @@ def validation_transforms() -> Compose:
         [
             LoadImaged(keys=("image", "label")),
             EnsureChannelFirstd(keys=("image", "label")),
-            Orientationd(keys=("image", "label"), axcodes="RAS"),
+            Orientationd(keys=("image", "label"), axcodes="RAS", labels=None),
             CropForegroundd(keys=("image", "label"), source_key="image"),
             ScaleIntensityRangePercentilesd(
                 keys="image",

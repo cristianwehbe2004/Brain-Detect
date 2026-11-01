@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from monai.data import Dataset
+from monai.data import Dataset, list_data_collate
 from torch.utils.data import DataLoader
 
 from brain_detect.data.decathlon import DecathlonRecord
@@ -39,4 +39,10 @@ def create_loader(
 ) -> DataLoader:
     """Create a PyTorch loader for model-ready samples."""
     dataset = create_dataset(records, training=training, patch_size=patch_size)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=training, num_workers=num_workers)
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=training,
+        num_workers=num_workers,
+        collate_fn=list_data_collate,
+    )

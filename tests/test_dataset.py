@@ -29,3 +29,12 @@ def test_validate_labels_and_validation_loader(tmp_path: Path) -> None:
     assert tuple(batch["image"].shape) == (1, 4, 96, 96, 96)
     assert tuple(batch["label"].shape) == (1, 1, 96, 96, 96)
     assert set(np.unique(batch["label"].numpy())) == {0, 1}
+
+
+def test_training_loader_collates_random_crops(tmp_path: Path) -> None:
+    record = make_record(tmp_path)
+
+    batch = next(iter(create_loader([record], training=True, num_workers=0)))
+
+    assert tuple(batch["image"].shape) == (1, 4, 96, 96, 96)
+    assert tuple(batch["label"].shape) == (1, 1, 96, 96, 96)
