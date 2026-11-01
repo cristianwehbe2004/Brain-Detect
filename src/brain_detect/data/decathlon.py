@@ -27,7 +27,7 @@ def discover_records(dataset_root: Path) -> list[DecathlonRecord]:
         raise FileNotFoundError(f"Expected imagesTr and labelsTr under {dataset_root}")
 
     records = []
-    for image in sorted(images_dir.glob("*.nii.gz")):
+    for image in sorted(path for path in images_dir.glob("*.nii.gz") if not path.name.startswith(".")):
         patient_id = image.name.removesuffix(".nii.gz")
         label = labels_dir / f"{patient_id}.nii.gz"
         if label.is_file():

@@ -20,6 +20,7 @@ def make_dataset(root: Path) -> None:
     affine = np.eye(4)
     nib.save(nib.Nifti1Image(image, affine), root / "imagesTr" / "brain_000.nii.gz")
     nib.save(nib.Nifti1Image(label, affine), root / "labelsTr" / "brain_000.nii.gz")
+    (root / "imagesTr" / "._brain_001.nii.gz").write_bytes(b"AppleDouble metadata")
     (root / "dataset.json").write_text(
         '{"modality": {"0": "MRI"}, "labels": {"0": "background"}, "training": []}',
         encoding="utf-8",
