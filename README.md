@@ -61,6 +61,27 @@ training samples to `96 x 96 x 96` patches, normalize each foreground
 channel by percentiles, preserve paired image/label spatial transforms, and
 pad validation volumes to the minimum patch size.
 
+## 3D U-Net baseline
+
+Train the baseline in Colab after the real-data loader check succeeds:
+
+```bash
+python scripts/train_unet.py \
+  --data-root data/decathlon/Task01_BrainTumour \
+  --output-dir data/experiments/unet_baseline \
+  --epochs 5
+```
+
+For a smoke test, add `--max-cases 10 --epochs 1`. The experiment writes
+`best.pt`, `latest.pt`, `history.json`, and `config.json`. Save that directory
+to Google Drive for the project report. Visualize a prediction with:
+
+```bash
+python scripts/visualize_prediction.py \
+  --data-root data/decathlon/Task01_BrainTumour \
+  --checkpoint data/experiments/unet_baseline/best.pt
+```
+
 BraTS support remains available as a separate loader. BraTS data is
 access-controlled and must be downloaded from an approved source after
 accepting its terms. Place the extracted patient directories under
