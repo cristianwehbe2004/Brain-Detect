@@ -55,6 +55,11 @@ For persistence across Colab sessions, mount Google Drive and point
 
 The MONAI training transform is available from
 `brain_detect.data.transforms.training_transforms`.
+Model-ready datasets and PyTorch loaders are available from
+`brain_detect.data.dataset.create_dataset` and `create_loader`. They crop
+training samples to `96 x 96 x 96` patches, normalize each foreground
+channel by percentiles, preserve paired image/label spatial transforms, and
+pad validation volumes to the minimum patch size.
 
 BraTS support remains available as a separate loader. BraTS data is
 access-controlled and must be downloaded from an approved source after

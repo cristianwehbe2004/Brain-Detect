@@ -75,6 +75,19 @@ def load_record(record: DecathlonRecord) -> tuple[np.ndarray, np.ndarray]:
     return image, label
 
 
+def validate_labels(record: DecathlonRecord, allowed_labels: set[int] | None = None) -> set[int]:
+    """Return labels present in a mask and reject non-integer or unknown values."""
+    label = np.asarray(nib.load(record.label).dataobj)
+    if not np.all(np.isfinite(label)) or not np.all(label == np.rint(label)):
+        raise ValueError(f"{record.patient_id} contains non-integer or non-finite labels")
+    present = {int(value) for value in np.unique(label)}
+    if allowed_labels is not None:
+        unexpected = present - allowed_labels
+        if unexpected:
+            raise ValueError(f"{record.patient_id} contains unexpected labels: {sorted(unexpected)}")
+    return present
+
+
 def intensity_statistics(record: DecathlonRecord) -> dict[str, dict[str, float | int]]:
     """Calculate non-zero voxel statistics for every image channel."""
     image, _ = load_record(record)

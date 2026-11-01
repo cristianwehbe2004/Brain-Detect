@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from monai.transforms import (
     Compose,
+    CropForegroundd,
     EnsureChannelFirstd,
     EnsureTyped,
     LoadImaged,
@@ -11,7 +12,8 @@ from monai.transforms import (
     RandCropByPosNegLabeld,
     RandFlipd,
     RandRotate90d,
-    ScaleIntensityRanged,
+    ScaleIntensityRangePercentilesd,
+    SpatialPadd,
 )
 
 
@@ -22,13 +24,15 @@ def training_transforms(patch_size: tuple[int, int, int] = (96, 96, 96)) -> Comp
             LoadImaged(keys=("image", "label")),
             EnsureChannelFirstd(keys=("image", "label")),
             Orientationd(keys=("image", "label"), axcodes="RAS"),
-            ScaleIntensityRanged(
+            CropForegroundd(keys=("image", "label"), source_key="image"),
+            ScaleIntensityRangePercentilesd(
                 keys="image",
-                a_min=0,
-                a_max=500,
+                lower=1,
+                upper=99,
                 b_min=0,
                 b_max=1,
                 clip=True,
+                channel_wise=True,
             ),
             RandCropByPosNegLabeld(
                 keys=("image", "label"),
@@ -43,5 +47,29 @@ def training_transforms(patch_size: tuple[int, int, int] = (96, 96, 96)) -> Comp
             RandFlipd(keys=("image", "label"), spatial_axis=0, prob=0.5),
             RandRotate90d(keys=("image", "label"), prob=0.5, max_k=3),
             EnsureTyped(keys=("image", "label")),
+        ]
+    )
+
+
+def validation_transforms() -> Compose:
+    """Build deterministic transforms for full-volume validation samples."""
+    return Compose(
+        [
+            LoadImaged(keys=("image", "label")),
+            EnsureChannelFirstd(keys=("image", "label")),
+            Orientationd(keys=("image", "label"), axcodes="RAS"),
+            CropForegroundd(keys=("image", "label"), source_key="image"),
+            ScaleIntensityRangePercentilesd(
+                keys="image",
+                lower=1,
+                upper=99,
+                b_min=0,
+                b_max=1,
+                clip=True,
+                channel_wise=True,
+            ),
+            SpatialPadd(keys=("image", "label"), spatial_size=(96, 96, 96)),
+            EnsureTyped(keys="image", dtype=None),
+            EnsureTyped(keys="label", dtype=None),
         ]
     )
