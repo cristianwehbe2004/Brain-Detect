@@ -82,6 +82,34 @@ python scripts/visualize_prediction.py \
   --checkpoint data/experiments/unet_baseline/best.pt
 ```
 
+## Audit and held-out test evaluation
+
+Run the preprocessing/data audit before a reportable experiment:
+
+```bash
+python scripts/audit_decathlon.py \
+  --data-root data/decathlon/Task01_BrainTumour \
+  --output data/experiments/dataset_audit.json
+```
+
+Evaluate the selected `best.pt` exactly once on the patient-level test split:
+
+```bash
+python scripts/evaluate_test.py \
+  --data-root data/decathlon/Task01_BrainTumour \
+  --checkpoint data/experiments/unet_baseline/best.pt \
+  --output data/experiments/unet_baseline/test_metrics.json
+```
+
+The test report contains mean and per-class Dice, sensitivity, and specificity.
+Generate report figures from the training history with:
+
+```bash
+python scripts/plot_history.py \
+  data/experiments/unet_baseline/history.json \
+  --output data/experiments/unet_baseline/training_curves.png
+```
+
 BraTS support remains available as a separate loader. BraTS data is
 access-controlled and must be downloaded from an approved source after
 accepting its terms. Place the extracted patient directories under
