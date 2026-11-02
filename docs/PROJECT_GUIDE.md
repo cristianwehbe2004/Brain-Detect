@@ -2,6 +2,31 @@
 
 This document explains the project for new contributors.
 
+## Current project status
+
+We are currently between the initial data-preparation milestone and the
+baseline experiment milestone:
+
+- The project is published in the private
+  `cristianwehbe2004/Brain-Detect` GitHub repository.
+- The active dataset is Medical Segmentation Decathlon
+  `Task01_BrainTumour`.
+- Dataset discovery, loading, alignment checks, label validation, statistics,
+  and deterministic patient-level splits are implemented.
+- MONAI preprocessing and PyTorch DataLoaders are implemented.
+- A compact 3D U-Net baseline, Dice-based training/validation, checkpointing,
+  test metrics, audit reports, and plots are implemented.
+- The 20-case, 2-epoch development experiment completed with best validation
+  Dice approximately `0.0264`. This is a smoke/development result, not the
+  final baseline.
+- The next experiment is a longer baseline run using a larger/all-case
+  training split, followed by held-out test evaluation.
+- The CNN-Transformer hybrid has not been implemented yet. It should only be
+  started after the U-Net baseline and test protocol are stable.
+
+The source code is shared through GitHub. The dataset, checkpoints, and
+generated results are kept outside GitHub in Google Drive.
+
 ## 1. Project goal
 
 Brain-Detect is a research project for multi-modal brain MRI tumor
@@ -242,13 +267,48 @@ Open a pull request after running tests and lint checks.
 ## 9. Recommended Colab workflow
 
 Colab is used for GPU computation; GitHub is used for source code; Google
-Drive is used for persistent datasets and experiment outputs.
+Drive is used for persistent datasets and experiment outputs. Each person
+should use their **own Google account and own Colab session**. Do not share
+one Google account or run two jobs in the same Colab session.
+
+The project owner should share the private Drive folder with the
+collaborator's Google account:
+
+- **Viewer**: the collaborator can read/copy the dataset.
+- **Editor**: the collaborator can also save experiment outputs.
+
+The collaborator does not need ownership of the dataset and does not need to
+upload it to GitHub.
 
 ### Start a Colab session
 
 ```python
 from google.colab import drive
 drive.mount("/content/drive")
+```
+
+Complete the authorization using the Google account that owns or has been
+granted access to the shared project folder. After mounting, locate the
+folder:
+
+```python
+!find /content/drive/MyDrive -maxdepth 5 \
+  \( -type d -name "Task01_BrainTumour" -o -type d -name "Brain-Detect" \) \
+  -print
+```
+
+The exact path may differ for a shared folder. Set it only after confirming
+that it contains `imagesTr`, `labelsTr`, and `dataset.json`:
+
+```python
+from pathlib import Path
+
+drive_dataset = Path(
+    "/content/drive/MyDrive/Brain-Detect/data/decathlon/Task01_BrainTumour"
+)
+
+if not (drive_dataset / "imagesTr").is_dir():
+    raise FileNotFoundError(f"Dataset path is incorrect: {drive_dataset}")
 ```
 
 Clone or update the code:
@@ -260,28 +320,57 @@ Clone or update the code:
 !pip install -e ".[dev]" --quiet
 ```
 
-Copy the dataset from Drive to Colab local storage before training:
+If the repository is private, authenticate with GitHub using an approved
+method. Never commit a GitHub token to the notebook or repository.
+
+Copy the dataset from Drive to each person's private Colab local storage
+before training:
 
 ```python
+import shutil
+
 !rm -rf /content/Task01_BrainTumour
-!cp -r \
-  "/content/drive/MyDrive/Brain-Detect/data/decathlon/Task01_BrainTumour" \
-  "/content/Task01_BrainTumour"
+shutil.copytree(drive_dataset, Path("/content/Task01_BrainTumour"))
 ```
 
 Use `/content/Task01_BrainTumour` for `--data-root`. Reading thousands of
 compressed NIfTI files directly from mounted Drive can cause slowdowns or
 transport disconnection errors.
 
+Verify the local copy:
+
+```python
+local_dataset = Path("/content/Task01_BrainTumour")
+print(local_dataset.exists())
+print([path.name for path in local_dataset.iterdir()])
+```
+
 Save checkpoints and reports back to Drive:
 
 ```python
 !python scripts/train_unet.py \
   --data-root "/content/Task01_BrainTumour" \
-  --output-dir "/content/drive/MyDrive/Brain-Detect/experiments/unet_baseline" \
+  --output-dir "/content/drive/MyDrive/Brain-Detect/experiments/<unique-experiment-name>" \
   --epochs 5 \
   --num-workers 0
 ```
+
+Replace `<unique-experiment-name>` with a unique folder, for example:
+
+```text
+experiments/
+├── unet_20cases_cristian/
+├── unet_baseline_cristian/
+├── unet_baseline_collaborator/
+└── hybrid_experiment/
+```
+
+Never let two people write to the same experiment directory. This prevents
+checkpoints, histories, and metrics from being overwritten.
+
+When a Colab runtime disconnects, `/content` is deleted. The dataset must be
+copied again from Drive, but checkpoints and reports saved under
+`/content/drive/MyDrive/...` remain available.
 
 ## 10. How to share the dataset with a collaborator
 
@@ -297,6 +386,8 @@ Do not upload the dataset to GitHub. Choose one of these approaches:
 5. They copy the dataset to `/content` before training.
 
 This is the simplest option when both contributors can use Google Drive.
+The collaborator should not sign into the owner's Google account. They should
+use their own account and accept the folder invitation.
 
 ### Option B: Each collaborator downloads the official archive
 
@@ -326,3 +417,18 @@ Each experiment should have a unique directory. Do not overwrite another
 person's checkpoint or metrics. Record the Git commit, dataset split seed,
 configuration, hardware, runtime, and results with every experiment.
 
+## 12. First task for a new collaborator
+
+After setting up their own Colab session, a collaborator should:
+
+1. Pull the latest GitHub code.
+2. Mount their own Google Drive account.
+3. Confirm access to the shared `Task01_BrainTumour` folder.
+4. Copy the dataset to `/content/Task01_BrainTumour`.
+5. Run `audit_decathlon.py`.
+6. Run a one-epoch smoke test in a unique experiment directory.
+7. Review `history.json`, `config.json`, and the prediction image.
+8. Discuss changes before opening a GitHub branch and pull request.
+
+This confirms that both contributors use the same data, preprocessing,
+patient split seed, and evaluation protocol before changing the model.
