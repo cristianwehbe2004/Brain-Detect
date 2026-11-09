@@ -208,6 +208,10 @@ python scripts/audit_decathlon.py \
   --output experiments/dataset_audit.json
 ```
 
+The audit stores the exact patient IDs in `split_ids` using seed `42`.
+Treat these IDs as frozen and reuse them for every training, validation,
+testing, and architecture-comparison experiment.
+
 Evaluate the selected checkpoint on the held-out test patients:
 
 ```bash

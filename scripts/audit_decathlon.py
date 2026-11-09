@@ -32,7 +32,10 @@ def main() -> int:
     records = discover_records(args.data_root)
     if args.max_cases is not None:
         records = records[: args.max_cases]
+    if not records:
+        raise SystemExit("No complete image/label pairs found")
     allowed_labels = {int(key) for key in metadata["labels"]}
+    expected_channels = len(metadata["modality"])
     cases = []
     for record in records:
         image, _ = load_record(record)
@@ -51,10 +54,22 @@ def main() -> int:
     all_ids = [patient_id for values in splits.values() for patient_id in values]
     if len(all_ids) != len(set(all_ids)):
         raise ValueError("Patient split overlap detected")
+    invalid_cases = [
+        case["patient_id"]
+        for case in cases
+        if case["channels"] != expected_channels
+        or not case["finite_image"]
+        or not case["alignment"]["aligned"]
+    ]
+    if invalid_cases:
+        raise ValueError(f"Dataset audit failed for cases: {', '.join(invalid_cases[:10])}")
     report = {
         "case_count": len(records),
         "metadata_labels": metadata["labels"],
-        "splits": {key: len(value) for key, value in splits.items()},
+        "metadata_modalities": metadata["modality"],
+        "split_seed": 42,
+        "split_ids": splits,
+        "split_counts": {key: len(value) for key, value in splits.items()},
         "all_aligned": all(case["alignment"]["aligned"] for case in cases),
         "all_finite": all(case["finite_image"] for case in cases),
         "cases": cases,
