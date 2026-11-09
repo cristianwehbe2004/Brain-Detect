@@ -33,25 +33,8 @@ python scripts/visualize_decathlon.py
 The inspection report includes metadata, channel statistics, alignment
 results, and deterministic patient-level train/validation/test splits.
 
-## Colab workflow
-
-To keep the 7.3 GB archive off your Mac, open a Google Colab notebook and run:
-
-```python
-!git clone <your-repository-url> /content/Brain-Detect
-%cd /content/Brain-Detect
-!pip install -e ".[dev]"
-!mkdir -p data/decathlon
-!curl -L --continue-at - \
-  https://msd-for-monai.s3-us-west-2.amazonaws.com/Task01_BrainTumour.tar \
-  -o data/decathlon/Task01_BrainTumour.tar
-!tar -xf data/decathlon/Task01_BrainTumour.tar -C data/decathlon
-!python scripts/inspect_decathlon.py
-!python scripts/visualize_decathlon.py
-```
-
-For persistence across Colab sessions, mount Google Drive and point
-`--data-root` at a copy of the extracted `Task01_BrainTumour` directory.
+All development and training now run locally. Keep the downloaded archive and
+extracted dataset under `data/decathlon/`, which is ignored by Git.
 
 The MONAI training transform is available from
 `brain_detect.data.transforms.training_transforms`.
@@ -63,7 +46,7 @@ pad validation volumes to the minimum patch size.
 
 ## 3D U-Net baseline
 
-Train the baseline in Colab after the real-data loader check succeeds:
+Train the baseline locally after the real-data loader check succeeds:
 
 ```bash
 python scripts/train_unet.py \
@@ -73,8 +56,8 @@ python scripts/train_unet.py \
 ```
 
 For a smoke test, add `--max-cases 10 --epochs 1`. The experiment writes
-`best.pt`, `latest.pt`, `history.json`, and `config.json`. Save that directory
-to Google Drive for the project report. Visualize a prediction with:
+`best.pt`, `latest.pt`, `history.json`, and `config.json`. Visualize a
+prediction with:
 
 ```bash
 python scripts/visualize_prediction.py \
@@ -152,6 +135,6 @@ when intentionally inventorying a partially extracted download.
 
 ## Current scope
 
-This milestone does not train a model or download data automatically. The
-next steps are visualization, preprocessing transforms, and model-ready
-dataset objects after the local dataset has been verified.
+This milestone does not train a model automatically. The next steps are
+visualization, preprocessing transforms, and model-ready dataset objects
+after the local dataset has been verified.

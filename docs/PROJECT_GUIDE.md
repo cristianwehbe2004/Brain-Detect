@@ -25,7 +25,7 @@ baseline experiment milestone:
   started after the U-Net baseline and test protocol are stable.
 
 The source code is shared through GitHub. The dataset, checkpoints, and
-generated results are kept outside GitHub in Google Drive.
+generated results are kept outside GitHub in local ignored directories.
 
 ## 1. Project goal
 
@@ -268,145 +268,42 @@ git checkout -b feature/short-description
 Do not commit datasets, checkpoints, or generated experiment directories.
 Open a pull request after running tests and lint checks.
 
-## 9. Recommended Colab workflow
+## 9. Local workflow
 
-Colab is used for GPU computation; GitHub is used for source code; Google
-Drive is used for persistent datasets and experiment outputs. Each person
-should use their **own Google account and own Colab session**. Do not share
-one Google account or run two jobs in the same Colab session.
+All dataset preparation, auditing, training, and evaluation run on the local
+machine. The archive and extracted data are stored under the ignored
+`data/decathlon/` directory:
 
-The project owner should share the private Drive folder with the
-collaborator's Google account:
-
-- **Viewer**: the collaborator can read/copy the dataset.
-- **Editor**: the collaborator can also save experiment outputs.
-
-The collaborator does not need ownership of the dataset and does not need to
-upload it to GitHub.
-
-### Start a Colab session
-
-```python
-from google.colab import drive
-drive.mount("/content/drive")
+```bash
+mkdir -p data/decathlon
+curl -L --continue-at - \
+  https://msd-for-monai.s3-us-west-2.amazonaws.com/Task01_BrainTumour.tar \
+  -o data/decathlon/Task01_BrainTumour.tar
+tar -xf data/decathlon/Task01_BrainTumour.tar -C data/decathlon
 ```
 
-Complete the authorization using the Google account that owns or has been
-granted access to the shared project folder. After mounting, locate the
-folder:
+Install the project and run the Phase 1 audit:
 
-```python
-!find /content/drive/MyDrive -maxdepth 5 \
-  \( -type d -name "Task01_BrainTumour" -o -type d -name "Brain-Detect" \) \
-  -print
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+python scripts/audit_decathlon.py \
+  --data-root data/decathlon/Task01_BrainTumour \
+  --output data/experiments/dataset_audit.json
 ```
 
-The exact path may differ for a shared folder. Set it only after confirming
-that it contains `imagesTr`, `labelsTr`, and `dataset.json`:
+Run local training with a unique experiment directory:
 
-```python
-from pathlib import Path
-
-drive_dataset = Path(
-    "/content/drive/MyDrive/Brain-Detect/data/decathlon/Task01_BrainTumour"
-)
-
-if not (drive_dataset / "imagesTr").is_dir():
-    raise FileNotFoundError(f"Dataset path is incorrect: {drive_dataset}")
-```
-
-Clone or update the code:
-
-```python
-!rm -rf /content/Brain-Detect
-!git clone https://github.com/cristianwehbe2004/Brain-Detect.git /content/Brain-Detect
-%cd /content/Brain-Detect
-!pip install -e ".[dev]" --quiet
-```
-
-If the repository is private, authenticate with GitHub using an approved
-method. Never commit a GitHub token to the notebook or repository.
-
-Copy the dataset from Drive to each person's private Colab local storage
-before training:
-
-```python
-import shutil
-
-!rm -rf /content/Task01_BrainTumour
-shutil.copytree(drive_dataset, Path("/content/Task01_BrainTumour"))
-```
-
-Use `/content/Task01_BrainTumour` for `--data-root`. Reading thousands of
-compressed NIfTI files directly from mounted Drive can cause slowdowns or
-transport disconnection errors.
-
-Verify the local copy:
-
-```python
-local_dataset = Path("/content/Task01_BrainTumour")
-print(local_dataset.exists())
-print([path.name for path in local_dataset.iterdir()])
-```
-
-Save checkpoints and reports back to Drive:
-
-```python
-!python scripts/train_unet.py \
-  --data-root "/content/Task01_BrainTumour" \
-  --output-dir "/content/drive/MyDrive/Brain-Detect/experiments/<unique-experiment-name>" \
+```bash
+python scripts/train_unet.py \
+  --data-root data/decathlon/Task01_BrainTumour \
+  --output-dir data/experiments/unet_baseline \
   --epochs 5 \
   --num-workers 0
 ```
 
-Replace `<unique-experiment-name>` with a unique folder, for example:
-
-```text
-experiments/
-├── unet_20cases_cristian/
-├── unet_baseline_cristian/
-├── unet_baseline_collaborator/
-└── hybrid_experiment/
-```
-
-Never let two people write to the same experiment directory. This prevents
-checkpoints, histories, and metrics from being overwritten.
-
-When a Colab runtime disconnects, `/content` is deleted. The dataset must be
-copied again from Drive, but checkpoints and reports saved under
-`/content/drive/MyDrive/...` remain available.
-
-## 10. How to share the dataset with a collaborator
-
-Do not upload the dataset to GitHub. Choose one of these approaches:
-
-### Option A: Shared Google Drive folder
-
-1. Create a private Google Drive folder for the project.
-2. Share it with the collaborator's Google account as **Viewer** or
-   **Editor**, according to your needs.
-3. Put the extracted `Task01_BrainTumour` directory in that folder.
-4. The collaborator mounts their Drive in Colab.
-5. They copy the dataset to `/content` before training.
-
-This is the simplest option when both contributors can use Google Drive.
-The collaborator should not sign into the owner's Google account. They should
-use their own account and accept the folder invitation.
-
-### Option B: Each collaborator downloads the official archive
-
-Give the collaborator the official archive URL and have them download it in
-their own Colab session or approved storage. This avoids copying a large
-dataset between accounts.
-
-### Option C: Shared cloud storage
-
-For a larger team, use an institution-approved shared bucket or storage
-workspace. Give collaborators only the access they need and follow the
-dataset's terms of use.
-
-The collaborator does not need the dataset in the GitHub repository. They
-only need the repository code plus a local/Colab `--data-root` path.
+Do not commit the dataset, checkpoints, or generated experiment files.
 
 ## 11. Collaboration responsibilities
 
@@ -423,16 +320,14 @@ configuration, hardware, runtime, and results with every experiment.
 
 ## 12. First task for a new collaborator
 
-After setting up their own Colab session, a collaborator should:
+After cloning the repository, a collaborator should:
 
-1. Pull the latest GitHub code.
-2. Mount their own Google Drive account.
-3. Confirm access to the shared `Task01_BrainTumour` folder.
-4. Copy the dataset to `/content/Task01_BrainTumour`.
-5. Run `audit_decathlon.py`.
-6. Run a one-epoch smoke test in a unique experiment directory.
-7. Review `history.json`, `config.json`, and the prediction image.
-8. Discuss changes before opening a GitHub branch and pull request.
+1. Install the project in a local virtual environment.
+2. Download and extract the official dataset archive locally.
+3. Run `audit_decathlon.py`.
+4. Run a one-epoch smoke test in a unique experiment directory.
+5. Review `history.json`, `config.json`, and the prediction image.
+6. Discuss changes before opening a GitHub branch and pull request.
 
 This confirms that both contributors use the same data, preprocessing,
 patient split seed, and evaluation protocol before changing the model.
